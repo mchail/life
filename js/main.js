@@ -9,23 +9,39 @@ window.Life = (function() {
 	var playing = false;
 	var frame = 500;
 	var gen = 1;
+	var mousedown = false;
 
 	function init(rows, cols) {
 		board = createBoard(rows, cols, true);
 
 		hud();
-		addClickHandler();
+		addMouseHandlers();
 		addKeyBindings();
 	}
 
-	function addClickHandler() {
-		$board.on('click', 'p span', function(evt) {
-			var $cell = $(this);
-			var r = $cell.data('r');
-			var c = $cell.data('c');
-			board[r][c] = 1 - board[r][c];
-			print();
+	function addMouseHandlers() {
+		$board.on('mousedown', 'p span', function(evt) {
+			toggleCell(this);
+			mousedown = true;
 		});
+
+		$('body').on('mouseup', function(evt) {
+			mousedown = false;
+		});
+
+		$board.on('mouseenter', 'p span', function(evt) {
+			if (mousedown) {
+				toggleCell(this);
+			}
+		});
+	}
+
+	function toggleCell(cell) {
+		var $cell = $(cell);
+		var r = $cell.data('r');
+		var c = $cell.data('c');
+		board[r][c] = 1 - board[r][c];
+		print();
 	}
 
 	function addKeyBindings() {
