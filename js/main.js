@@ -1,18 +1,19 @@
 window.Life = (function() {
 	var board = [];
 	var $board = $('#board');
-	var $fps = $('#fps');
+	var $hud = $('#hud');
 	var timeout;
 	var cellSize = 20;
 	var defaultRows = Math.floor(window.innerHeight / cellSize);
 	var defaultCols = Math.floor(window.innerWidth / cellSize);
 	var playing = false;
 	var frame = 500;
+	var gen = 1;
 
 	function init(rows, cols) {
 		board = createBoard(rows, cols, true);
 
-		showFps();
+		hud();
 		addClickHandler();
 		addKeyBindings();
 	}
@@ -60,6 +61,7 @@ window.Life = (function() {
 			}
 		}
 		board = newBoard;
+		gen++;
 		print();
 	}
 
@@ -121,14 +123,18 @@ window.Life = (function() {
 	function changeFrame(newFrame) {
 		pause();
 		frame = newFrame;
-		showFps();
 		play();
 	}
 
-	function showFps() {
+	function hud() {
+		var text = ''
 		var fps = 1000 / frame;
 		var dispFps = Math.round(fps * 1000) / 1000;
-		$fps.text(dispFps + 'fps');
+		text += board.length + " rows\n";
+		text += board[0].length + " columns\n";
+		text += gen + " generations\n";
+		text += dispFps + " fps\n";
+		$hud.text(text);
 	}
 
 	function faster() {
@@ -173,6 +179,7 @@ window.Life = (function() {
 			$board.html($output.html());
 			$board.addClass('init');
 		}
+		hud();
 	}
 
 	function getBoard() {

@@ -107,10 +107,15 @@ textarea {
 #board p span.alive {
     background: #000;
 }
-#fps {
+#hud {
     position: absolute;
     top: 3px;
     left: 3px;
+    white-space: pre;
+    font-family: monospace;
+    color: #555;
+    font-weight: 900;
+    font-size: 16px
 }
 
 
