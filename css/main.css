@@ -105,8 +105,18 @@ textarea {
     cursor: pointer;
 }
 #board p span.alive {
-    background: #000;
+    /*background: #000;*/
 }
+#board p span[data-lives="10"] { background: #000; }
+#board p span[data-lives="9"] { background: #666; }
+#board p span[data-lives="8"] { background: #777; }
+#board p span[data-lives="7"] { background: #888; }
+#board p span[data-lives="6"] { background: #999; }
+#board p span[data-lives="5"] { background: #aaa; }
+#board p span[data-lives="4"] { background: #bbb; }
+#board p span[data-lives="3"] { background: #ccc; }
+#board p span[data-lives="2"] { background: #ddd; }
+#board p span[data-lives="1"] { background: #eee; }
 #hud {
     position: absolute;
     top: 3px;

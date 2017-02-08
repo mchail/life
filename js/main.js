@@ -21,6 +21,7 @@ window.Life = (function() {
 
 	function addMouseHandlers() {
 		$board.on('mousedown', 'p span', function(evt) {
+			evt.preventDefault();
 			toggleCell(this);
 			mousedown = true;
 		});
@@ -167,9 +168,9 @@ window.Life = (function() {
 				for (var c = 0; c < board[0].length; c++) {
 					var $cell = $board.find('p').eq(r).find('span').eq(c);
 					if (board[r][c] === 1) {
-						$cell.addClass('alive');
+						birth($cell);
 					} else {
-						$cell.removeClass('alive');
+						kill($cell);
 					}
 				}
 			}
@@ -186,7 +187,7 @@ window.Life = (function() {
 					$cell.css('width', cellSize + 'px');
 					$cell.css('height', cellSize + 'px');
 					if (board[r][c] === 1) {
-						$cell.addClass('alive');
+						birth($cell);
 					}
 					$line.append($cell);
 				}
@@ -196,6 +197,20 @@ window.Life = (function() {
 			$board.addClass('init');
 		}
 		hud();
+	}
+
+	function birth(cell) {
+		cell.addClass('alive');
+		cell.attr('data-lives', 10);
+	}
+
+	function kill(cell) {
+		cell.removeClass('alive');
+		var lives = cell.attr('data-lives');
+		if (lives) {
+			lives = parseInt(lives, 10);
+			cell.attr('data-lives', lives - 1);
+		}
 	}
 
 	function getBoard() {
