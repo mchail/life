@@ -11,6 +11,30 @@ window.Life = (function() {
 	var gen = 1;
 	var mousedown = false;
 
+	function Cell(alive) {
+		this.alive = alive || false;
+		this.lastAlive = alive ? 0 : undefined;
+		this.nextAlive = false;
+
+		this.evolve = function() {
+			if (this.nextAlive) {
+				this.lastAlive = 0;
+			} else {
+				if (this.lastAlive) {
+					this.lastAlive++;
+				} else if (this.alive) {
+					this.lastAlive = 1;
+				}
+			}
+			this.alive = this.nextAlive;
+		}
+
+		this.toggle = function() {
+			this.nextAlive = !this.alive;
+			this.evolve();
+		}
+	}
+
 	function init(rows, cols) {
 		board = createBoard(rows, cols, true);
 
@@ -41,7 +65,7 @@ window.Life = (function() {
 		var $cell = $(cell);
 		var r = $cell.data('r');
 		var c = $cell.data('c');
-		board[r][c] = 1 - board[r][c];
+		board[r][c].toggle();
 		print();
 	}
 
@@ -61,7 +85,8 @@ window.Life = (function() {
 			var row = [];
 			for (var c = 0; c < cols; c++) {
 				var val = random ? Math.round(Math.random()) : 0;
-				row.push(val);
+				var alive = val === 1;
+				row.push(new Cell(alive));
 			}
 			tempBoard.push(row);
 		}
@@ -71,46 +96,57 @@ window.Life = (function() {
 	function next() {
 		var rows = board.length;
 		var cols = board[0].length;
-		var newBoard = createBoard(rows, cols);
+		// var newBoard = createBoard(rows, cols);
 		for (var r = 0; r < rows; r++) {
 			for (var c = 0; c < cols; c++) {
-				newBoard[r][c] = judge(rows, cols, r, c);
+				judge(rows, cols, r, c);
 			}
 		}
-		board = newBoard;
+		for (var r = 0; r < rows; r++) {
+			for (var c = 0; c < cols; c++) {
+				var cell = board[r][c];
+				cell.evolve();
+			}
+		}
 		gen++;
 		print();
 	}
 
 	function judge(rows, cols, r, c) {
-		var state = board[r][c];
+		var cell = board[r][c];
 		var upRow = (r - 1 < 0) ? (rows - 1) : r - 1;
 		var downRow = (r + 1 >= rows) ? 0 : r + 1;
 		var leftCol = (c - 1 < 0) ? (cols - 1) : c - 1;
 		var rightCol = (c + 1 >= cols) ? 0 : c + 1;
-		var neighbors = board[upRow][leftCol] +
-		                  board[upRow][c] +
-		                  board[upRow][rightCol] +
-		                  board[r][leftCol] +
-		                  board[r][rightCol] +
-		                  board[downRow][leftCol] +
-		                  board[downRow][c] +
-		                  board[downRow][rightCol];
-		if (state == 1) {
+		var neighbors = 0;
+		$.each([
+			[upRow, leftCol],
+      [upRow, c],
+      [upRow, rightCol],
+      [r, leftCol],
+      [r, rightCol],
+      [downRow, leftCol],
+      [downRow, c],
+      [downRow, rightCol]
+		], function(_, coords) {
+			if (board[coords[0]][coords[1]].alive) {
+				neighbors++;
+			}
+		});
+		var nextAlive = false;
+		if (cell.alive) {
 			if (neighbors < 2) {
-				return 0;
 			} else if (neighbors > 3) {
-				return 0;
 			} else {
-				return 1;
+				nextAlive = true;
 			}
 		} else {
 			if (neighbors === 3) {
-				return 1;
+				nextAlive = true;
 			} else {
-				return 0;
 			}
 		}
+		cell.nextAlive = nextAlive;
 	}
 
 	function clear() {
@@ -167,10 +203,10 @@ window.Life = (function() {
 			for (var r = 0; r < board.length; r++) {
 				for (var c = 0; c < board[0].length; c++) {
 					var $cell = $board.find('p').eq(r).find('span').eq(c);
-					if (board[r][c] === 1) {
+					if (board[r][c].alive) {
 						birth($cell);
 					} else {
-						kill($cell);
+						kill($cell, board[r][c].lastAlive);
 					}
 				}
 			}
@@ -186,7 +222,7 @@ window.Life = (function() {
 					$cell.attr('data-c', c);
 					$cell.css('width', cellSize + 'px');
 					$cell.css('height', cellSize + 'px');
-					if (board[r][c] === 1) {
+					if (board[r][c].alive) {
 						birth($cell);
 					}
 					$line.append($cell);
@@ -201,16 +237,12 @@ window.Life = (function() {
 
 	function birth(cell) {
 		cell.addClass('alive');
-		cell.attr('data-lives', 10);
+		cell.attr('data-lives', 0);
 	}
 
-	function kill(cell) {
+	function kill(cell, lastAlive) {
 		cell.removeClass('alive');
-		var lives = cell.attr('data-lives');
-		if (lives) {
-			lives = parseInt(lives, 10);
-			cell.attr('data-lives', lives - 1);
-		}
+		cell.attr('data-lives', lastAlive);
 	}
 
 	function getBoard() {
