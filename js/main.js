@@ -4,13 +4,15 @@ window.Life = (function() {
 	var $hud = $('#hud');
 	var timeout;
 	var cellSize = 20;
-	var defaultRows = Math.floor(window.innerHeight / cellSize);
-	var defaultCols = Math.floor(window.innerWidth / cellSize);
 	var playing = false;
 	var frame = 500;
 	var gen = 1;
 	var mousedown = false;
-	var color = 50;
+	var color = 150;
+	var startingSaturation = 50;
+	var minSaturation = 0;
+	var startingLightness = 50;
+	var maxLightness = 100;
 
 	function Cell(alive) {
 		this.alive = alive || false;
@@ -36,7 +38,16 @@ window.Life = (function() {
 		}
 	}
 
+	function defaultRows() {
+		return Math.floor(window.innerHeight / cellSize);
+	}
+
+	function defaultCols() {
+		return Math.floor(window.innerWidth / cellSize);
+	}
+
 	function init(rows, cols) {
+		readHash();
 		initBoard(rows, cols);
 		hud();
 		addMouseHandlers();
@@ -46,10 +57,12 @@ window.Life = (function() {
 	function regenerate() {
 		initBoard();
 		gen = 1;
+		print();
 	}
 
 	function initBoard(rows, cols) {
 		board = createBoard(rows, cols);
+		initPrintBoard();
 	}
 
 	function addMouseHandlers() {
@@ -88,11 +101,12 @@ window.Life = (function() {
 		Mousetrap.bind('u', colorUp);
 		Mousetrap.bind('d', colorDown);
 		Mousetrap.bind('r', regenerate);
+		Mousetrap.bind('s', setHash);
 	}
 
 	function createBoard(rows, cols) {
-		rows = rows || defaultRows;
-		cols = cols || defaultCols;
+		rows = rows || defaultRows();
+		cols = cols || defaultCols();
 		var tempBoard = [];
 		for (var r = 0; r < rows; r++) {
 			var row = [];
@@ -198,7 +212,6 @@ window.Life = (function() {
 	}
 
 	function hud() {
-		var text = ''
 		var fps = 1000 / frame;
 		var dispFps = Math.round(fps * 1000) / 1000;
 		$hud.empty();
@@ -217,6 +230,7 @@ window.Life = (function() {
 		$small.append($('<p>').text('h     toggle hud'));
 		$small.append($('<p>').text('u     hue up'));
 		$small.append($('<p>').text('d     hue down'));
+		$small.append($('<p>').text('s     save state'));
 		$hud.append($small);
 	}
 
@@ -242,57 +256,96 @@ window.Life = (function() {
 		changeFrame(frame * 1.2);
 	}
 
+	function initPrintBoard() {
+		$board.empty();
+		for (var r = 0; r < board.length; r++) {
+			var row = board[r];
+			var $line = $('<p>');
+			$line.css('height', cellSize + 'px');
+			for (var c = 0; c < row.length; c ++) {
+				var $cell = $('<span>');
+				$cell.attr('data-r', r);
+				$cell.attr('data-c', c);
+				$cell.css('width', cellSize + 'px');
+				$cell.css('height', cellSize + 'px');
+				$line.append($cell);
+			}
+			$board.append($line);
+		}
+	}
+
 	function print() {
-		if ($board.is('.init')) {
-			for (var r = 0; r < board.length; r++) {
-				for (var c = 0; c < board[0].length; c++) {
-					var $cell = $board.find('p').eq(r).find('span').eq(c);
-					if (board[r][c].alive) {
-						birth($cell);
-					} else {
-						kill($cell, board[r][c].lastAlive);
-					}
+		for (var r = 0; r < board.length; r++) {
+			for (var c = 0; c < board[0].length; c++) {
+				var $cell = $board.find('p').eq(r).find('span').eq(c);
+				if (board[r][c].alive) {
+					birth($cell);
+				} else {
+					kill($cell, board[r][c].lastAlive);
 				}
 			}
-		} else {
-			var $output = $('<div>');
-			for (var r = 0; r < board.length; r++) {
-				var row = board[r];
-				var $line = $('<p>');
-				$line.css('height', cellSize + 'px');
-				for (var c = 0; c < row.length; c ++) {
-					var $cell = $('<span>');
-					$cell.attr('data-r', r);
-					$cell.attr('data-c', c);
-					$cell.css('width', cellSize + 'px');
-					$cell.css('height', cellSize + 'px');
-					if (board[r][c].alive) {
-						birth($cell);
-					}
-					$line.append($cell);
-				}
-				$output.append($line);
-			}
-			$board.html($output.html());
-			$board.addClass('init');
 		}
 		hud();
 	}
 
 	function birth(cell) {
-		cell.addClass('alive');
-		cell.attr('data-lives', 0);
 		setColor(cell, 0);
 	}
 
 	function kill(cell, lastAlive) {
-		cell.removeClass('alive');
-		cell.attr('data-lives', lastAlive);
 		setColor(cell, lastAlive);
 	}
 
 	function setColor(cell, lastAlive) {
-		cell.css('background', 'hsl(' + color + ', ' + 50 + '%, ' + (100 - 50 / 2 ** lastAlive) +  '%)');
+		cell.css(
+			'background',
+			'hsl(' +
+				color + ', ' +
+				(saturation(lastAlive)) + '%, ' +
+				(lightness(lastAlive)) + '%)'
+		);
+	}
+
+	function saturation(lastAlive) {
+		// return lastAlive === 0 ? 50 : 0;
+		lastAlive = lastAlive === undefined ? 20 : lastAlive;
+		return (minSaturation + (startingSaturation - minSaturation) / 1.5 ** lastAlive);
+	}
+
+	function lightness(lastAlive) {
+		// return lastAlive === 0 ? 50 : 100;
+		lastAlive = lastAlive === undefined ? 20 : lastAlive;
+		return (maxLightness - (maxLightness - startingLightness) / 2 ** lastAlive);
+	}
+
+	function readHash() {
+		var hash = window.location.hash;
+		if (hash.length <= 1) {
+			return;
+		}
+
+		var state = JSON.parse(hash.substring(1, hash.length));
+		frame = state.frame;
+		cellSize = state.cellSize;
+		color = state.color;
+		startingLightness = state.startingLightness;
+		maxLightness = state.maxLightness;
+		startingSaturation = state.startingSaturation;
+		minSaturation = state.minSaturation;
+	}
+
+	function setHash() {
+		var state = {
+			// board: board,
+			frame: frame,
+			cellSize: cellSize,
+			color: color,
+			startingLightness: startingLightness,
+			maxLightness: maxLightness,
+			startingSaturation: startingSaturation,
+			minSaturation: minSaturation
+		}
+		window.location.hash = JSON.stringify(state);
 	}
 
 	function getBoard() {
@@ -307,7 +360,9 @@ window.Life = (function() {
 		print: print,
 		clear: clear,
 		board: getBoard,
-		initBoard: initBoard
+		initBoard: initBoard,
+		lightness: lightness,
+		saturation: saturation
 	};
 })();
 
