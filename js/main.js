@@ -332,6 +332,8 @@ window.Life = (function() {
 		maxLightness = state.maxLightness;
 		startingSaturation = state.startingSaturation;
 		minSaturation = state.minSaturation;
+
+		setHash();
 	}
 
 	function setHash() {
