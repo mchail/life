@@ -8,7 +8,7 @@ window.Life = (function() {
 	var frame = 500;
 	var gen = 1;
 	var mousedown = false;
-	var color = 150;
+	var color = 167;
 	var startingSaturation = 50;
 	var minSaturation = 0;
 	var startingLightness = 50;
@@ -324,7 +324,7 @@ window.Life = (function() {
 			return;
 		}
 
-		var state = JSON.parse(hash.substring(1, hash.length));
+		var state = JSON.parse(decodeURIComponent(hash.substring(1, hash.length)));
 		frame = state.frame;
 		cellSize = state.cellSize;
 		color = state.color;
@@ -345,7 +345,7 @@ window.Life = (function() {
 			startingSaturation: startingSaturation,
 			minSaturation: minSaturation
 		}
-		window.location.hash = JSON.stringify(state);
+		window.location.hash =JSON.stringify(state);
 	}
 
 	function getBoard() {
