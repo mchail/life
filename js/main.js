@@ -10,6 +10,7 @@ window.Life = (function() {
 	var frame = 500;
 	var gen = 1;
 	var mousedown = false;
+	var color = 50;
 
 	function Cell(alive) {
 		this.alive = alive || false;
@@ -36,11 +37,19 @@ window.Life = (function() {
 	}
 
 	function init(rows, cols) {
-		board = createBoard(rows, cols, true);
-
+		initBoard(rows, cols);
 		hud();
 		addMouseHandlers();
 		addKeyBindings();
+	}
+
+	function regenerate() {
+		initBoard();
+		gen = 1;
+	}
+
+	function initBoard(rows, cols) {
+		board = createBoard(rows, cols);
 	}
 
 	function addMouseHandlers() {
@@ -75,16 +84,20 @@ window.Life = (function() {
 		Mousetrap.bind('x', clear);
 		Mousetrap.bind('>', faster);
 		Mousetrap.bind('<', slower);
+		Mousetrap.bind('h', toggleHud);
+		Mousetrap.bind('u', colorUp);
+		Mousetrap.bind('d', colorDown);
+		Mousetrap.bind('r', regenerate);
 	}
 
-	function createBoard(rows, cols, random) {
+	function createBoard(rows, cols) {
 		rows = rows || defaultRows;
 		cols = cols || defaultCols;
 		var tempBoard = [];
 		for (var r = 0; r < rows; r++) {
 			var row = [];
 			for (var c = 0; c < cols; c++) {
-				var val = random ? Math.round(Math.random()) : 0;
+				var val = Math.round(Math.random());
 				var alive = val === 1;
 				row.push(new Cell(alive));
 			}
@@ -96,7 +109,6 @@ window.Life = (function() {
 	function next() {
 		var rows = board.length;
 		var cols = board[0].length;
-		// var newBoard = createBoard(rows, cols);
 		for (var r = 0; r < rows; r++) {
 			for (var c = 0; c < cols; c++) {
 				judge(rows, cols, r, c);
@@ -150,7 +162,13 @@ window.Life = (function() {
 	}
 
 	function clear() {
-		board = createBoard();
+		for (var row = 0; row < board.length; row++) {
+			for (var col = 0; col < board[0].length; col++) {
+				board[row][col].alive = false;
+				board[row][col].lastAlive = undefined;
+				board[row][col].nextAlive = false;
+			}
+		}
 		print();
 	}
 
@@ -174,20 +192,46 @@ window.Life = (function() {
 	}
 
 	function changeFrame(newFrame) {
-		pause();
+		// pause();
 		frame = newFrame;
-		play();
+		// play();
 	}
 
 	function hud() {
 		var text = ''
 		var fps = 1000 / frame;
 		var dispFps = Math.round(fps * 1000) / 1000;
-		text += board.length + " rows\n";
-		text += board[0].length + " columns\n";
-		text += gen + " generations\n";
-		text += dispFps + " fps\n";
-		$hud.text(text);
+		$hud.empty();
+		$hud.append($('<p>').text(board.length + ' rows'));
+		$hud.append($('<p>').text(board[0].length + ' columns'));
+		$hud.append($('<p>').text(gen + ' generations'));
+		$hud.append($('<p>').text(dispFps + ' fps'));
+		$hud.append($('<p>').text('hue: ' + color));
+		var $small = $('<small>');
+		$small.append($('<p>').text('space pause'));
+		$small.append($('<p>').text('n     next frame'));
+		$small.append($('<p>').text('r     regenerate'));
+		$small.append($('<p>').text('x     clear'));
+		$small.append($('<p>').text('>     faster'));
+		$small.append($('<p>').text('<     slower'));
+		$small.append($('<p>').text('h     toggle hud'));
+		$small.append($('<p>').text('u     hue up'));
+		$small.append($('<p>').text('d     hue down'));
+		$hud.append($small);
+	}
+
+	function toggleHud() {
+		$hud.toggle();
+	}
+
+	function colorUp() {
+		color++;
+		print();
+	}
+
+	function colorDown() {
+		color--;
+		print();
 	}
 
 	function faster() {
@@ -238,11 +282,17 @@ window.Life = (function() {
 	function birth(cell) {
 		cell.addClass('alive');
 		cell.attr('data-lives', 0);
+		setColor(cell, 0);
 	}
 
 	function kill(cell, lastAlive) {
 		cell.removeClass('alive');
 		cell.attr('data-lives', lastAlive);
+		setColor(cell, lastAlive);
+	}
+
+	function setColor(cell, lastAlive) {
+		cell.css('background', 'hsl(' + color + ', ' + 50 + '%, ' + (100 - 50 / 2 ** lastAlive) +  '%)');
 	}
 
 	function getBoard() {
@@ -256,7 +306,8 @@ window.Life = (function() {
 		pause: pause,
 		print: print,
 		clear: clear,
-		board: getBoard
+		board: getBoard,
+		initBoard: initBoard
 	};
 })();
 
